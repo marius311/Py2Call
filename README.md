@@ -36,4 +36,8 @@ julia> py2"sys.version"
 "2.7.16 (default, Apr  6 2019, 01:42:57) \n[GCC 8.3.0]"
 ```
 
-**Notes:** This will trigger two rebuilds and recompiles of PyCall each time. It will also create a worker process which is linked with Python 2 (you can get its ID at `PyCall.id_py2worker`). Exclude this worker from parallel jobs if the parallel jobs require a linked Python 3.
+**Notes:** 
+* Does not work with Revise, so make sure `using Py2Call` is done before `using Revise`.
+* To specify the Python 2 version, do `ENV["PYTHON2"]="/path/to/python2"` before using PyCall. 
+* This will trigger two rebuilds and recompiles of PyCall each time. 
+* It will also create a worker process which is linked with Python 2 (you can get its ID at `PyCall.id_py2worker`). Exclude this worker from parallel jobs if the parallel jobs require a linked Python 3.
