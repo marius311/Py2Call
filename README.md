@@ -5,23 +5,13 @@ Call both Python 2 and Python 3 from a single Julia session.
 ### Install
 
 ```julia
-] add https://github.com/marius311/Py2Call.git
+julia> ENV["PYTHON2"] = "/path/to/python2"
+pkg> add https://github.com/marius311/Py2Call.git
 ```
 
 ### Usage
 
-First build both PyCall and Py2Call to set their Python executables,
-
-
-```bash
-julia> using Pkg
-
-julia> ENV["PYTHON"]="/path/to/python"; Pkg.build("PyCall")
-
-julia> ENV["PYTHON2"]="/path/to/python2"; Pkg.build("Py2Call")
-```
-
-Then you can do,
+After installing and selecting the Python 2 version as above, you can do,
 
 ```julia
 julia> using PyCall
@@ -42,6 +32,14 @@ julia> py"sys.version"
 julia> py2"sys.version"
 "2.7.16 (default, Apr  6 2019, 01:42:57) \n[GCC 8.3.0]"
 ```
+
+You can always reset the Python 2 version used by Py2Call later,
+
+```bash
+PYTHON2=/path/to/python2 julia -e 'using Pkg; Pkg.build("Py2Call")'
+```
+
+
 ### How it works
 
-This package installs an older version of PyCall (1.91.1) into it's own environment (note, you must have a different version than 1.91.1 in your main environment, otherwise this won't work). Then, this PyCall and the PyCall in your main environment can be built to use different versions of Python. The Py2Call package then spawns a worker process which is running in the other environment, and `py2"..."` simply forwards the string to `py"..."` the worker. (Note: if you run this from parallel jobs, you may want to exclude this worker from parallel computation; you can get its ID from `Py2Call.id_py2worker[]`)
+This package installs an older version of PyCall (1.91.1) into it's own environment (note, you must have a different version than 1.91.1 in your main environment, otherwise this won't work). Then, this PyCall and the PyCall in your main environment can be built to use different versions of Python. The Py2Call package then spawns a worker process which is running in the other environment, and `py2"..."` simply forwards to `py"..."` on the worker. (Note: if you run this from parallel jobs, you may want to exclude this worker from parallel computation; you can get its ID from `Py2Call.id_py2worker[]`)
