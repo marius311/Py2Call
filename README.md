@@ -39,7 +39,6 @@ You can always reset the Python 2 version used by Py2Call later,
 PYTHON2=/path/to/python2 julia -e 'using Pkg; Pkg.build("Py2Call")'
 ```
 
-
 ### How it works
 
-This package installs an older version of PyCall (1.91.1) into it's own environment (note, you must have a different version than 1.91.1 in your main environment, otherwise this won't work). Then, this PyCall and the PyCall in your main environment can be built to use different versions of Python. The Py2Call package then spawns a worker process which is running in the other environment, and `py2"..."` simply forwards to `py"..."` on the worker. (Note: if you run this from parallel jobs, you may want to exclude this worker from parallel computation; you can get its ID from `Py2Call.id_py2worker[]`)
+This package installs an older version of PyCall (1.91.1) into it's own environment (note, you must have a different version than 1.91.1 in your main environment, otherwise this won't work). Then, this PyCall and the PyCall in your main environment can be built to use different versions of Python. The Py2Call package then spawns a worker process which is running in the other environment, and `py2"..."` simply forwards to `py"..."` on the worker. Note: the py2 worker is hidden and is not returned in calls to `workers()`.
