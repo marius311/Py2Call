@@ -10,16 +10,23 @@ Call both Python 2 and Python 3 from a single Julia session.
 
 ### Usage
 
-Assuming your main PyCall is built with Python 3, 
+First build both PyCall and Py2Call to set their Python executables,
+
+
+```bash
+julia> using Pkg
+
+julia> ENV["PYTHON"]="/path/to/python"; Pkg.build("PyCall")
+
+julia> ENV["PYTHON2"]="/path/to/python2"; Pkg.build("Py2Call")
+```
+
+Then you can do,
 
 ```julia
 julia> using PyCall
 
 julia> using Py2Call
-      From worker 2:	  Building Conda ─→ `~/.julia/packages/Conda/kLXeC/deps/build.log`
-      From worker 2:	  Building PyCall → `~/.julia/packages/PyCall/ttONZ/deps/build.log`
-      From worker 2:	  Building Conda ─→ `~/.julia/packages/Conda/kLXeC/deps/build.log`
-      From worker 2:	  Building PyCall → `~/.julia/packages/PyCall/ttONZ/deps/build.log`
 
 julia> py"""
        import sys
@@ -35,9 +42,6 @@ julia> py"sys.version"
 julia> py2"sys.version"
 "2.7.16 (default, Apr  6 2019, 01:42:57) \n[GCC 8.3.0]"
 ```
+### How it works
 
-**Notes:** 
-* Does not work with Revise, so make sure `using Py2Call` is done before `using Revise`.
-* To specify the Python 2 version, do `ENV["PYTHON2"]="/path/to/python2"` before using PyCall. 
-* This will trigger two rebuilds and recompiles of PyCall each time. 
-* It will also create a worker process which is linked with Python 2 (you can get its ID at `PyCall.id_py2worker`). Exclude this worker from parallel jobs if the parallel jobs require a linked Python 3.
+This package installs an older version of PyCall (1.91.1) into it's own environment (note, you must have a different version than 1.91.1 in your main environment, otherwise this won't work). Then, this PyCall and the PyCall in your main environment can be built to use different versions of Python. The Py2Call package then spawns a worker process which is running in the other environment, and `py2"..."` simply forwards the string to `py"..."` the worker. (Note: if you run this from parallel jobs, you may want to exclude this worker from parallel computation; you can get its ID from `Py2Call.id_py2worker[]`)
