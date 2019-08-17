@@ -16,24 +16,24 @@ end
 
 function init_py2_worker()
     
-    # don't load currently loaded packages on the worker
-    Base.toplevel_load[] = false
-    id_py2worker[] = addprocs(1, exeflags="--project=$(joinpath(dirname(@__FILE__),".."))", restrict=true)[1]
-    Base.toplevel_load[] = true
+    # make the worker's LOAD_PATH start with Py2Call/Project.toml, which is
+    # where we specify the custom version of PyCall
+    OLD_JULIA_LOAD_PATH = get(ENV,"JULIA_LOAD_PATH",nothing)
+    ENV["JULIA_LOAD_PATH"] = join([abspath(joinpath(dirname(@__FILE__),"..")); Base.load_path()],":")
     
-    # "hide" this worker from the pool of workers so subsequently loaded
-    # packages are not loaded on it either
-    pop!(Distributed.PGRP.workers) 
+    id_py2worker[] = addprocs(1, restrict=true)[1]
     
-    @everywhere id_py2worker[] @eval Main begin
-        using Py2Call
-        using PyCall
+    if OLD_JULIA_LOAD_PATH == nothing
+        delete!(ENV,"JULIA_LOAD_PATH")
+    else
+        ENV["JULIA_LOAD_PATH"] = OLD_JULIA_LOAD_PATH
     end
     
 end
 
 macro py2_str(str)
-    :(@fetchfrom id_py2worker[] @py_str $str)
+    py_str_ex = esc(macroexpand(__module__, :($__module__.Py2Call.@py_str $str)))
+    :(@fetchfrom $(id_py2worker[]) $py_str_ex)
 end
 
 end
