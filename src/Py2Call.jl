@@ -41,7 +41,7 @@ for macro_name in (:py_str, :py2_str)
             try
                 $(@__MODULE__).PyCall.@py_str $str
             catch err
-                err isa Main.PyCall.PyError ? error(err.val) : rethrow()
+                err isa Main.PyCall.PyError ? error(string(err)) : rethrow()
             end
         end
         exs = [:(@fetchfrom $(id_py2worker[]) $(esc(macroexpand((s=='l' ? __module__ : Main),py_str_ex)))) for s in scope]
