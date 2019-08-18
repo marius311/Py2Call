@@ -3,8 +3,8 @@ module Py2Call
 export @py2_str
 
 using Distributed
-using PyCall
 using Pkg
+import PyCall
 
 const id_py2worker = Ref{Int}()
 
@@ -31,19 +31,23 @@ function init_py2_worker()
         ENV["JULIA_LOAD_PATH"] = OLD_JULIA_LOAD_PATH
     end
     
-    @everywhere id_py2worker[] @eval using PyCall: PyError
+    @everywhere id_py2worker[] @eval Main import PyCall
     
 end
 
-macro py2_str(str)
-    py_str_ex = quote
-        try
-            $__module__.Py2Call.@py_str $str
-        catch err
-            err isa PyError ? error(err.val) : rethrow()
+for macro_name in (:py_str, :py2_str)
+    @eval macro $macro_name(str,scope="l")
+        py_str_ex = quote
+            try
+                $(@__MODULE__).PyCall.@py_str $str
+            catch err
+                err isa Main.PyCall.PyError ? error(err.val) : rethrow()
+            end
         end
+        exs = [:(@fetchfrom $(id_py2worker[]) $(esc(macroexpand((s=='l' ? __module__ : Main),py_str_ex)))) for s in scope]
+        :(begin $(exs...) end)
     end
-    :(@fetchfrom $(id_py2worker[]) $(esc(macroexpand(Main,py_str_ex))))
 end
+
 
 end

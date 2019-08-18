@@ -39,6 +39,8 @@ You can always reset the Python 2 version used by Py2Call later,
 PYTHON2=/path/to/python2 julia -e 'using Pkg; Pkg.build("Py2Call")'
 ```
 
+If you only use Python 2 from your script, you can do `using Py2Call: @py_str` and then `py"..."` will call Python 2.
+
 ### How it works
 
 Building this package installs an older version of PyCall (1.91.1) into it's own environment and builds it for Python 2, while the version of PyCall in your main environment stays built for Python 3 (note, this means you can't use this same old PyCall version in your main environment). 
