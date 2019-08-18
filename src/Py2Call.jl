@@ -29,11 +29,19 @@ function init_py2_worker()
         ENV["JULIA_LOAD_PATH"] = OLD_JULIA_LOAD_PATH
     end
     
+    @everywhere id_py2worker[] @eval using PyCall: PyError
+    
 end
 
 macro py2_str(str)
-    py_str_ex = esc(macroexpand(__module__, :($__module__.Py2Call.@py_str $str)))
-    :(@fetchfrom $(id_py2worker[]) $py_str_ex)
+    py_str_ex = quote
+        try
+            $__module__.Py2Call.@py_str $str
+        catch err
+            err isa PyError ? error(err.val) : rethrow()
+        end
+    end
+    :(@fetchfrom $(id_py2worker[]) $(esc(macroexpand(__module__,py_str_ex))))
 end
 
 end
