@@ -5,13 +5,12 @@ Call both Python 2 and Python 3 from a single Julia session.
 ### Install
 
 ```julia
+julia> ENV["PYTHON"] = "/path/to/python"
 julia> ENV["PYTHON2"] = "/path/to/python2"
 pkg> add https://github.com/marius311/Py2Call.git
 ```
 
 ### Usage
-
-After installing and selecting the Python 2 version as above, you can do,
 
 ```julia
 julia> using PyCall
@@ -33,13 +32,13 @@ julia> py2"sys.version"
 "2.7.16 (default, Apr  6 2019, 01:42:57) \n[GCC 8.3.0]"
 ```
 
-You can always reset the Python 2 version used by Py2Call later,
+You can always reset the Python versions used,
 
 ```bash
-PYTHON2=/path/to/python2 julia -e 'using Pkg; Pkg.build("Py2Call")'
+PYTHON=/path/to/python PYTHON2=/path/to/python2 julia -e 'using Pkg; Pkg.build("Py2Call")'
 ```
 
-If you only use Python 2 from your script, you can do `using Py2Call: @py_str` and then `py"..."` will call Python 2.
+If you only use Python 2 from your script, you can do `using Py2Call: @py_str` and then use `py"..."` which is more succinct and may be syntax highlighted depending on editor, but will call Python 2.
 
 ### How it works
 
