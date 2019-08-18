@@ -21,8 +21,10 @@ function init_py2_worker()
     OLD_JULIA_LOAD_PATH = get(ENV,"JULIA_LOAD_PATH",nothing)
     ENV["JULIA_LOAD_PATH"] = join([abspath(joinpath(dirname(@__FILE__),"..")); Base.load_path()],":")
     
+    # launch worker
     id_py2worker[] = addprocs(1, restrict=true)[1]
     
+    # reset original JULIA_LOAD_PATH
     if OLD_JULIA_LOAD_PATH == nothing
         delete!(ENV,"JULIA_LOAD_PATH")
     else
@@ -41,7 +43,7 @@ macro py2_str(str)
             err isa PyError ? error(err.val) : rethrow()
         end
     end
-    :(@fetchfrom $(id_py2worker[]) $(esc(macroexpand(__module__,py_str_ex))))
+    :(@fetchfrom $(id_py2worker[]) $(esc(macroexpand(Main,py_str_ex))))
 end
 
 end
