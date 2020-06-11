@@ -52,8 +52,12 @@ for macro_name in (:py_str, :py2_str)
         # interpolated into the Python expression with one additional `$` since the
         # whole thing is in the end wrapped in an `@eval`
         ex = postwalk(ex) do x
-            if @capture(x, $(GlobalRef(PyCall,:PyObject))(v_))
-                :($(GlobalRef(PyCall,:PyObject))($(Expr(:$,v))))
+            if @capture(x, $(GlobalRef(PyCall,:PyObject))(arg_))
+                :($(GlobalRef(PyCall,:PyObject))($(Expr(:$,arg))))
+            elseif @capture(x, Base.string(args__))
+                :(Base.string($(map(args) do arg
+                    arg isa String ? arg : Expr(:$,arg)
+                end...)))
             else
                 x
             end
