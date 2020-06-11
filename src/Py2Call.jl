@@ -4,9 +4,10 @@ export @py2_str
 
 using Distributed
 using Pkg
+using MacroTools: @capture, postwalk
 import PyCall
 
-const id_py2worker = Ref{Int}()
+id_py2worker = nothing
 
 function __init__()
     if myid() == 1
@@ -22,7 +23,7 @@ function init_py2_worker()
     ENV["JULIA_LOAD_PATH"] = join([abspath(joinpath(dirname(@__FILE__),"..")); Base.load_path()],":")
     
     # launch worker
-    id_py2worker[] = addprocs(1, restrict=true)[1]
+    global id_py2worker = addprocs(1, restrict=true)[1]
     
     # reset original JULIA_LOAD_PATH
     if OLD_JULIA_LOAD_PATH == nothing
@@ -31,22 +32,46 @@ function init_py2_worker()
         ENV["JULIA_LOAD_PATH"] = OLD_JULIA_LOAD_PATH
     end
     
-    @everywhere id_py2worker[] @eval Main import PyCall
+    @everywhere id_py2worker @eval Main import PyCall
     
 end
 
 for macro_name in (:py_str, :py2_str)
-    @eval macro $macro_name(str,scope="l")
-        py_str_ex = quote
-            try
-                $(@__MODULE__).PyCall.@py_str $str
-            catch err
-                err isa Main.PyCall.PyError ? error(string(err)) : rethrow()
+    
+    @eval macro $macro_name(str)
+    
+        # expand py"..." (in Main so PyCall uses Main's pynamespace)
+        ex = macroexpand(Main, :($PyCall.@py_str $str))
+        
+        # a kind of hacky way to wrap the references to local variables that are
+        # interpolated into the Python expression with one additional `$` since the
+        # whole thing is in the end wrapped in an `@eval`
+        ex = postwalk(ex) do x
+            if @capture(x, $(GlobalRef(PyCall,:PyObject))(v_))
+                :($(GlobalRef(PyCall,:PyObject))($(Expr(:$,v))))
+            else
+                x
             end
         end
-        exs = [:(@fetchfrom $(id_py2worker[]) $(esc(macroexpand((s=='l' ? __module__ : Main),py_str_ex)))) for s in scope]
-        :(begin $(exs...) end)
+        
+        # ship call to worker
+        ex = quote
+            $Distributed.remotecall_fetch($id_py2worker) do
+                try
+                    result = $ex
+                catch err
+                    err isa $PyCall.PyError ? $error($string(err)) : $rethrow()
+                end
+            end
+        end
+        
+        # wrap the whole thing in an `@eval` so that the closure we created above is
+        # a closure in Main and hence can be deserialized on the py2worker without
+        # it needing the caller's module loaded
+        esc(Expr(:macrocall, Symbol("@eval"), @__LINE__, Main, ex))
+        
     end
+
 end
 
 
