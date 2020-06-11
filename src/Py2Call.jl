@@ -46,7 +46,7 @@ for macro_name in (:py_str, :py2_str)
     @eval macro $macro_name(str)
     
         # expand py"..." (in Main so PyCall uses Main's pynamespace)
-        ex = macroexpand(Main, :($PyCall.@py_str $str))
+        ex = macroexpand(Main, :($PyCall.@py_str $str), recursive=false)
         
         # a kind of hacky way to wrap the references to local variables that are
         # interpolated into the Python expression with one additional `$` since the
