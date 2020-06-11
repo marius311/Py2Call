@@ -20,18 +20,23 @@ function init_py2_worker()
     # make the worker's LOAD_PATH start with Py2Call/Project.toml, which is
     # where we specify the custom version of PyCall
     OLD_JULIA_LOAD_PATH = get(ENV,"JULIA_LOAD_PATH",nothing)
+    OLD_JULIA_PROJECT = get(ENV,"JULIA_PROJECT",nothing)
     ENV["JULIA_LOAD_PATH"] = join([abspath(joinpath(dirname(@__FILE__),"..")); Base.load_path()],":")
-    
+    delete!(ENV, "JULIA_PROJECT")
+
     # launch worker
     global id_py2worker = addprocs(1, restrict=true)[1]
     
-    # reset original JULIA_LOAD_PATH
+    # reset original JULIA_LOAD_PATH and JULIA_PROJECT
     if OLD_JULIA_LOAD_PATH == nothing
         delete!(ENV,"JULIA_LOAD_PATH")
     else
         ENV["JULIA_LOAD_PATH"] = OLD_JULIA_LOAD_PATH
     end
-    
+    if OLD_JULIA_PROJECT != nothing
+        ENV["JULIA_PROJECT"] = OLD_JULIA_PROJECT
+    end
+
     @everywhere id_py2worker @eval Main import PyCall
     
 end
